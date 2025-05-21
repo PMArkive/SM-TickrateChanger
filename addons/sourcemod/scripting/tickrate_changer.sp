@@ -61,6 +61,8 @@ public void OnPluginStart()
 		sm_tickrate.FloatValue = tickrate;
 		g_flTickInterval = GetDesiredTickInterval();
 	}
+
+	RegPluginLibrary("tickrate_changer");
 }
 
 static MRESReturn Detour_GetTickInterval(DHookReturn ret)
