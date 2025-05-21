@@ -9,6 +9,11 @@
 				"library"	"server"
 				"linux"		"@_ZNK14CServerGameDLL15GetTickIntervalEv"
 			}
+			"SV_ActivateServer"
+			{
+				"library"	"engine"
+				"linux"		"@_Z17SV_ActivateServerv"
+			}
 			"sv"
 			{
 				"library"	"engine"
@@ -22,6 +27,13 @@
 				"signature"	"CServerGameDLL::GetTickInterval"
 				"callconv"	"thiscall"
 				"return"	"float"
+				"this"		"ignore"
+			}
+			"SV_ActivateServer"
+			{
+				"signature"	"SV_ActivateServer"
+				"callconv"	"thiscall"
+				"return"	"bool"
 				"this"		"ignore"
 			}
 		}
