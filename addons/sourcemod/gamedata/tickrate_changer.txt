@@ -1,0 +1,36 @@
+"Games"
+{
+	"tf"
+	{
+		"Signatures"
+		{
+			"CServerGameDLL::GetTickInterval"
+			{
+				"library"	"server"
+				"linux"		"@_ZNK14CServerGameDLL15GetTickIntervalEv"
+			}
+			"sv"
+			{
+				"library"	"engine"
+				"linux"		"@sv"
+			}
+		}
+		"Functions"
+		{
+			"CServerGameDLL::GetTickInterval"
+			{
+				"signature"	"CServerGameDLL::GetTickInterval"
+				"callconv"	"thiscall"
+				"return"	"float"
+				"this"		"ignore"
+			}
+		}
+		"Offsets"
+		{
+			"CBaseServer::m_flTickInterval"
+			{
+				"linux"		"0x154"
+			}
+		}
+	}
+}
