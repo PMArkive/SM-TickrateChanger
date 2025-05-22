@@ -19,7 +19,7 @@ public Plugin myinfo =
 	name = "Tickrate Changer",
 	author = "Mikusch, ficool2",
 	description = "Allows changing the server's tickrate at runtime.",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "https://github.com/Mikusch/SM-TickrateChanger"
 }
 
@@ -41,7 +41,7 @@ public void OnPluginStart()
 	
 	detour.Enable(Hook_Pre, Detour_ActivateServer);
 
-	sm_tickrate = CreateConVar("sm_tickrate", "-1", "Tickrate of the server, requires a level change to take effect. Set to -1 to use the default tickrate.", _, true, 10.0, true, 1000.0);
+	sm_tickrate = CreateConVar("sm_tickrate", "-1", "Tickrate of the server, requires a level change to take effect. Set to -1 to use the default tickrate.");
 
 	sv =  gamedata.GetMemSig("sv");
 	if (sv == Address_Null)
