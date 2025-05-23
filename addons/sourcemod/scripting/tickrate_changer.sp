@@ -3,6 +3,8 @@
 
 #include <dhooks>
 
+#define USE_DEFAULT_TICK_INTERVAL	(-1.0)
+
 // The range check in the engine is wrong
 #define MINIMUM_TICK_INTERVAL	(0.0011)
 #define MAXIMUM_TICK_INTERVAL	(0.0999)
@@ -12,15 +14,14 @@ ConVar sm_tickrate;
 Address sv;	// CBaseServer
 int m_flTickInterval;	// sv -> CBaseServer::m_flTickInterval
 
-// Tick interval to update in engine
-float g_flTickInterval = -1.0;
+float g_flTickInterval = USE_DEFAULT_TICK_INTERVAL;
 
 public Plugin myinfo =
 {
 	name = "Runtime Tickrate Changer",
 	author = "Mikusch, ficool2",
 	description = "Allows changing the server's tickrate at runtime.",
-	version = "1.0.2",
+	version = "1.0.3",
 	url = "https://github.com/Mikusch/SM-TickrateChanger"
 }
 
@@ -57,21 +58,17 @@ public void OnPluginStart()
 	// To set tickrate on server start, before any configs can run
 	float tickrate = GetCommandLineParamFloat("-tickrate");
 	if (tickrate)
-	{
 		sm_tickrate.FloatValue = tickrate;
-		g_flTickInterval = GetDesiredTickInterval();
-	}
 	
 	RegPluginLibrary("tickrate_changer");
 }
 
 float GetDesiredTickInterval()
 {
-	float tickrate = sm_tickrate.FloatValue;
-	if (tickrate == -1.0)
-		return tickrate;
+	if (sm_tickrate.IntValue == -1)
+		return USE_DEFAULT_TICK_INTERVAL;
 	
-	return Clamp(1.0 / tickrate, MINIMUM_TICK_INTERVAL, MAXIMUM_TICK_INTERVAL);
+	return Clamp(1.0 / sm_tickrate.FloatValue, MINIMUM_TICK_INTERVAL, MAXIMUM_TICK_INTERVAL);
 }
 
 stock any Min(any a, any b)
@@ -91,7 +88,7 @@ stock any Clamp(any val, any min, any max)
 
 static MRESReturn CServerGameDLL_GetTickInterval(DHookReturn ret)
 {
-	if (g_flTickInterval == -1.0)
+	if (g_flTickInterval == USE_DEFAULT_TICK_INTERVAL)
 		return MRES_Ignored;
 	
 	// Need to update CBaseServer::m_flTickInterval to avoid mismatch
@@ -103,6 +100,7 @@ static MRESReturn CServerGameDLL_GetTickInterval(DHookReturn ret)
 
 static MRESReturn SV_ActivateServer(DHookReturn ret)
 {
+	// Calculate new tickrate once on server activation so it stays consistent throughout
 	g_flTickInterval = GetDesiredTickInterval();
 	return MRES_Ignored;
 }
