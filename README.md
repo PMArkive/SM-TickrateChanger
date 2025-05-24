@@ -14,6 +14,8 @@ As of now, this only supports **Team Fortress 2** on **Linux**.
 This plugin only has one convar: `sm_tickrate`.
 
 You need to set it **before** level change for it to have any effect.
-It is safe to do so at any time, as the new tickrate will only be applied on map end.
+It is safe to do so at any time, as the new tickrate will only be applied after map end.
+
+Setting the tickrate to `0` will return the default tickrate.
 
 If you need the tickrate to be applied on server start, use the `-tickrate` launch parameter.

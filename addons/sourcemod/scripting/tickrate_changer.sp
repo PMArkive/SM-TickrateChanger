@@ -21,7 +21,7 @@ public Plugin myinfo =
 	name = "Runtime Tickrate Changer",
 	author = "Mikusch, ficool2",
 	description = "Allows changing the server's tickrate at runtime.",
-	version = "1.0.3",
+	version = "1.0.4",
 	url = "https://github.com/Mikusch/SM-TickrateChanger"
 }
 
@@ -43,7 +43,7 @@ public void OnPluginStart()
 	
 	detour.Enable(Hook_Pre, SV_ActivateServer);
 	
-	sm_tickrate = CreateConVar("sm_tickrate", "-1", "Tickrate of the server, requires a level change to take effect. Set to -1 to use the default tickrate.");
+	sm_tickrate = CreateConVar("sm_tickrate", "0", "Tickrate of the server, requires a level change to take effect. Set to 0 to use the default tickrate.", _, true, 0.0);
 	
 	sv =  gamedata.GetMemSig("sv");
 	if (sv == Address_Null)
@@ -65,7 +65,7 @@ public void OnPluginStart()
 
 float GetDesiredTickInterval()
 {
-	if (sm_tickrate.IntValue == -1)
+	if (sm_tickrate.IntValue <= 0)
 		return USE_DEFAULT_TICK_INTERVAL;
 	
 	return Clamp(1.0 / sm_tickrate.FloatValue, MINIMUM_TICK_INTERVAL, MAXIMUM_TICK_INTERVAL);
