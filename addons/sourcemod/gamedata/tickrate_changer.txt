@@ -14,10 +14,20 @@
 				"library"	"engine"
 				"linux"		"@_Z17SV_ActivateServerv"
 			}
+			"CGameServer::SpawnServer"
+			{
+				"library"	"engine"
+				"linux"		"@_ZN11CGameServer11SpawnServerEPKcS1_S1_"
+			}
 			"sv"
 			{
 				"library"	"engine"
 				"linux"		"@sv"
+			}
+			"host_state"
+			{
+				"library"	"engine"
+				"linux"		"@host_state"
 			}
 		}
 		"Functions"
@@ -32,9 +42,31 @@
 			"SV_ActivateServer"
 			{
 				"signature"	"SV_ActivateServer"
-				"callconv"	"thiscall"
+				"callconv"	"cdecl"
 				"return"	"bool"
 				"this"		"ignore"
+			}
+			"CGameServer::SpawnServer"
+			{
+				"signature"	"CGameServer::SpawnServer"
+				"callconv"	"thiscall"
+				"return"	"bool"
+				"this"		"address"
+				"arguments"
+				{
+					"szMapName"
+					{
+						"type"	"charptr"
+					}
+					"szMapFile"
+					{
+						"type"	"charptr"
+					}
+					"startspot"
+					{
+						"type"	"charptr"
+					}
+				}
 			}
 		}
 		"Offsets"
@@ -42,6 +74,21 @@
 			"CBaseServer::m_flTickInterval"
 			{
 				"linux"		"0x154"
+			}
+			"CCommonHostState::interval_per_tick"
+			{
+				"linux"		"0x8"
+			}
+		}
+		"Addresses"
+		{
+			"host_state"
+			{
+				"linux"
+				{
+					"signature"	"CEngineReplay::TicksToTime"
+					"offset"	"15"
+				}
 			}
 		}
 	}
