@@ -11,11 +11,11 @@ As of now, this only supports **Team Fortress 2** on **Linux**.
 
 ## Instructions
 
-This plugin only has one convar: `sm_tickrate`.
+The plugin defines a console command `sm_tickrate` and a console variable `sm_interval_per_tick`.
 
-You need to set it **before** level change for it to have any effect.
+You need to call or set either of these **before** level change for it to have any effect.
 It is safe to do so at any time, as the new tickrate will only be applied after map end.
 
-Setting the tickrate to `0` will return the default tickrate.
+Calling `sm_tickrate` with a value of `0` will return the server to the default tickrate.
 
-If you need the tickrate to be applied on server start, use the `-tickrate` launch parameter.
+If you need the tickrate to be applied on server start, use the `-tickrate` launch parameter. This will also make the tickrate persist throughout the server's lifetime.
