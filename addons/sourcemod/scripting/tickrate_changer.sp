@@ -3,19 +3,17 @@
 
 #include <dhooks>
 
-#define DEFAULT_TICK_INTERVAL	(0.015)
 #define MINIMUM_TICK_INTERVAL	(0.001)
 #define MAXIMUM_TICK_INTERVAL	(0.1)
 
 ConVar sm_interval_per_tick;
 
-Address sv;			// CBaseServer
-Address host_state;	// CCommonHostState
+Address sv;					// CBaseServer
+Address host_state;			// CCommonHostState
+Address g_ServerGameDLL;	// CServerGameDLL
 
 int m_flTickInterval;	// CBaseServer::m_flTickInterval
 int interval_per_tick;	// CCommonHostState::interval_per_tick
-
-float g_flTickInterval = DEFAULT_TICK_INTERVAL;
 
 public Plugin myinfo =
 {
@@ -32,43 +30,71 @@ public void OnPluginStart()
 	if (!gamedata)
 		SetFailState("Failed to find gamedata/tickrate_changer.txt");
 	
-	CreateDetour(gamedata, "CServerGameDLL::GetTickInterval", CServerGameDLL_GetTickInterval);
-	CreateDetour(gamedata, "CGameServer::SpawnServer", CGameServer_SpawnServer);
-	CreateDetour(gamedata, "SV_ActivateServer", SV_ActivateServer);
-
 	sv =  GetMemSig(gamedata, "sv");
 	host_state = GetMemSig(gamedata, "host_state");
-
+	g_ServerGameDLL = GetMemSig(gamedata, "g_ServerGameDLL");
+	
 	m_flTickInterval = GetOffset(gamedata, "CBaseServer::m_flTickInterval");
 	interval_per_tick = GetOffset(gamedata, "CCommonHostState::interval_per_tick");
-
+	
+	CreateDetour(gamedata, "CGameServer::SpawnServer", Hook_Pre, CGameServer_SpawnServer);
+	
+	DynamicHook hook = CreateHook(gamedata, "CServerGameDLL::GetTickInterval");
+	
+	char defInterval[32];
+	FloatToString(GetDefaultTickInterval(gamedata), defInterval, sizeof(defInterval));
+	
+	// After we fetch the default, hook GetTickInterval
+	hook.HookRaw(Hook_Pre, g_ServerGameDLL, CServerGameDLL_GetTickInterval);
+	
 	delete gamedata;
 	
-	sm_interval_per_tick = CreateConVar("sm_interval_per_tick", "0.015", "Time between server ticks (applied on level change).", FCVAR_NOTIFY, true, MINIMUM_TICK_INTERVAL, true, MAXIMUM_TICK_INTERVAL);
+	sm_interval_per_tick = CreateConVar("sm_interval_per_tick", defInterval, "Time between server ticks (applied on level change).", FCVAR_NOTIFY, true, MINIMUM_TICK_INTERVAL, true, MAXIMUM_TICK_INTERVAL);
 	RegServerCmd("sm_tickrate", OnTickRateChanged, "Sets the tickrate of the server (applied on level change).");
 	
 	RegPluginLibrary("tickrate_changer");
 }
 
-void UpdateTickInterval()
+float GetDefaultTickInterval(GameData gamedata)
+{
+	StartPrepSDKCall(SDKCall_Raw);
+	PrepSDKCall_SetFromConf(gamedata, SDKConf_Virtual, "CServerGameDLL::GetTickInterval");
+	PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_ByValue);
+	Handle call = EndPrepSDKCall();
+	if (!call)
+		SetFailState("Failed to create SDKCall 'CServerGameDLL::GetTickInterval'");
+	
+	return SDKCall(call, g_ServerGameDLL);
+}
+
+float GetCustomTickInterval()
 {
 	int tickrate = GetCommandLineParamInt("-tickrate", 0);
 	if (tickrate)
 		sm_interval_per_tick.FloatValue = (1.0 / tickrate);
 	
-	g_flTickInterval = sm_interval_per_tick.FloatValue;
+	return sm_interval_per_tick.FloatValue;
 }
 
-DynamicDetour CreateDetour(GameData gamedata, const char[] name, DHookCallback callback)
+DynamicDetour CreateDetour(GameData gamedata, const char[] name, HookMode mode, DHookCallback callback, bool enable = true)
 {
 	DynamicDetour detour = DynamicDetour.FromConf(gamedata, name);
 	if (detour == null)
 		SetFailState("Failed to setup '%s' detour", name);
 	
-	if (!detour.Enable(Hook_Pre, callback))
+	if (enable && !detour.Enable(mode, callback))
 		SetFailState("Failed to enable '%s' detour", name);
 	
 	return detour;
+}
+
+DynamicHook CreateHook(GameData gamedata, const char[] name)
+{
+	DynamicHook hook = DynamicHook.FromConf(gamedata, name);
+	if (hook == null)
+		SetFailState("Failed to setup '%s' hook", name);
+	
+	return hook;
 }
 
 Address GetMemSig(GameData gamedata, const char[] name)
@@ -91,26 +117,16 @@ int GetOffset(GameData gamedata, const char[] name)
 
 static MRESReturn CServerGameDLL_GetTickInterval(DHookReturn ret)
 {
-	StoreToAddress(sv + view_as<Address>(m_flTickInterval), g_flTickInterval, NumberType_Int32);
-	
-	ret.Value = g_flTickInterval;
+	float interval = GetCustomTickInterval();
+	StoreToAddress(sv + view_as<Address>(m_flTickInterval), interval, NumberType_Int32);
+	ret.Value = interval;
 	return MRES_Supercede;
 }
 
-// Called on level change
 static MRESReturn CGameServer_SpawnServer(DHookReturn ret, DHookParam params)
 {
-	UpdateTickInterval();
-	StoreToAddress(host_state + view_as<Address>(interval_per_tick), g_flTickInterval, NumberType_Int32);
-
-	return MRES_Ignored;
-}
-
-// Called on server init and level change
-static MRESReturn SV_ActivateServer(DHookReturn ret)
-{
-	UpdateTickInterval();
-
+	// This will make sure certain tick-related properties in CGameServer are set correctly
+	StoreToAddress(host_state + view_as<Address>(interval_per_tick), GetCustomTickInterval(), NumberType_Int32);
 	return MRES_Ignored;
 }
 
@@ -121,9 +137,10 @@ static Action OnTickRateChanged(int args)
 		ReplyToCommand(0, "[SM] Usage: sm_tickrate <tickrate>");
 		return Plugin_Handled;
 	}
-
-	if (GetCmdArgInt(1))
-		sm_interval_per_tick.FloatValue = (1.0 / GetCmdArgInt(1));
+	
+	int tickrate = GetCmdArgInt(1);
+	if (tickrate)
+		sm_interval_per_tick.FloatValue = (1.0 / tickrate);
 	else
 		sm_interval_per_tick.RestoreDefault();
 	

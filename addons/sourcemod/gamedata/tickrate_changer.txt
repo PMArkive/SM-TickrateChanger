@@ -4,16 +4,6 @@
 	{
 		"Signatures"
 		{
-			"CServerGameDLL::GetTickInterval"
-			{
-				"library"	"server"
-				"linux"		"@_ZNK14CServerGameDLL15GetTickIntervalEv"
-			}
-			"SV_ActivateServer"
-			{
-				"library"	"engine"
-				"linux"		"@_Z17SV_ActivateServerv"
-			}
 			"CGameServer::SpawnServer"
 			{
 				"library"	"engine"
@@ -29,23 +19,29 @@
 				"library"	"engine"
 				"linux"		"@host_state"
 			}
+			"g_ServerGameDLL"
+			{
+				"library"	"server"
+				"linux"		"@g_ServerGameDLL"
+			}
 		}
-		"Functions"
+		"Offsets"
 		{
 			"CServerGameDLL::GetTickInterval"
 			{
-				"signature"	"CServerGameDLL::GetTickInterval"
-				"callconv"	"thiscall"
-				"return"	"float"
-				"this"		"ignore"
+				"linux"		"10"
 			}
-			"SV_ActivateServer"
+			"CBaseServer::m_flTickInterval"
 			{
-				"signature"	"SV_ActivateServer"
-				"callconv"	"cdecl"
-				"return"	"bool"
-				"this"		"ignore"
+				"linux"		"0x154"
 			}
+			"CCommonHostState::interval_per_tick"
+			{
+				"linux"		"0x8"
+			}
+		}
+		"Functions"
+		{
 			"CGameServer::SpawnServer"
 			{
 				"signature"	"CGameServer::SpawnServer"
@@ -68,27 +64,12 @@
 					}
 				}
 			}
-		}
-		"Offsets"
-		{
-			"CBaseServer::m_flTickInterval"
+			"CServerGameDLL::GetTickInterval"
 			{
-				"linux"		"0x154"
-			}
-			"CCommonHostState::interval_per_tick"
-			{
-				"linux"		"0x8"
-			}
-		}
-		"Addresses"
-		{
-			"host_state"
-			{
-				"linux"
-				{
-					"signature"	"CEngineReplay::TicksToTime"
-					"offset"	"15"
-				}
+				"offset"	"CServerGameDLL::GetTickInterval"
+				"hooktype"	"raw"
+				"return"	"float"
+				"this"		"ignore"
 			}
 		}
 	}
