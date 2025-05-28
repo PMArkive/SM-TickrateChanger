@@ -37,16 +37,17 @@ public void OnPluginStart()
 	m_flTickInterval = GetOffset(gamedata, "CBaseServer::m_flTickInterval");
 	interval_per_tick = GetOffset(gamedata, "CCommonHostState::interval_per_tick");
 	
-	CreateDetour(gamedata, "CGameServer::SpawnServer", Hook_Pre, CGameServer_SpawnServer);
-	
-	DynamicHook hook = CreateHook(gamedata, "CServerGameDLL::GetTickInterval");
-	
 	char defInterval[32];
 	FloatToString(GetDefaultTickInterval(gamedata), defInterval, sizeof(defInterval));
 	
-	// After we fetch the default, hook GetTickInterval
+	DynamicDetour detour = CreateDynamicDetour(gamedata, "CGameServer::SpawnServer");
+	detour.Enable(Hook_Pre, CGameServer_SpawnServer);
+	
+	DynamicHook hook = CreateDynamicHook(gamedata, "CServerGameDLL::GetTickInterval");
 	hook.HookRaw(Hook_Pre, g_ServerGameDLL, CServerGameDLL_GetTickInterval);
 	
+	delete detour;
+	delete hook;
 	delete gamedata;
 	
 	sm_interval_per_tick = CreateConVar("sm_interval_per_tick", defInterval, "Time between server ticks (applied on level change).", FCVAR_NOTIFY, true, MINIMUM_TICK_INTERVAL, true, MAXIMUM_TICK_INTERVAL);
@@ -64,19 +65,16 @@ float GetCustomTickInterval()
 	return sm_interval_per_tick.FloatValue;
 }
 
-DynamicDetour CreateDetour(GameData gamedata, const char[] name, HookMode mode, DHookCallback callback, bool enable = true)
+DynamicDetour CreateDynamicDetour(GameData gamedata, const char[] name)
 {
 	DynamicDetour detour = DynamicDetour.FromConf(gamedata, name);
 	if (detour == null)
 		SetFailState("Failed to setup '%s' detour", name);
 	
-	if (enable && !detour.Enable(mode, callback))
-		SetFailState("Failed to enable '%s' detour", name);
-	
 	return detour;
 }
 
-DynamicHook CreateHook(GameData gamedata, const char[] name)
+DynamicHook CreateDynamicHook(GameData gamedata, const char[] name)
 {
 	DynamicHook hook = DynamicHook.FromConf(gamedata, name);
 	if (hook == null)
