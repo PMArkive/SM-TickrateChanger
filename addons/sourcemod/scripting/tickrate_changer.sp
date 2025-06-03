@@ -20,7 +20,7 @@ public Plugin myinfo =
 	name = "Runtime Tickrate Changer",
 	author = "Mikusch, ficool2",
 	description = "Allows changing the server's tickrate at runtime.",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "https://github.com/Mikusch/SM-TickrateChanger"
 }
 
@@ -52,8 +52,13 @@ public void OnPluginStart()
 	
 	sm_interval_per_tick = CreateConVar("sm_interval_per_tick", defInterval, "Time between server ticks (applied on level change).", FCVAR_NOTIFY, true, MINIMUM_TICK_INTERVAL, true, MAXIMUM_TICK_INTERVAL);
 	RegServerCmd("sm_tickrate", OnTickRateChanged, "Sets the tickrate of the server (applied on level change).");
-	
+}
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
 	RegPluginLibrary("tickrate_changer");
+	
+	return APLRes_Success;
 }
 
 float GetCustomTickInterval()
