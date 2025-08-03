@@ -37,20 +37,30 @@ public void OnPluginStart()
 	m_flTickInterval = GetOffset(gamedata, "CBaseServer::m_flTickInterval");
 	interval_per_tick = GetOffset(gamedata, "CCommonHostState::interval_per_tick");
 	
-	char defInterval[32];
-	FloatToString(GetDefaultTickInterval(gamedata), defInterval, sizeof(defInterval));
+	StartPrepSDKCall(SDKCall_Raw);
+	PrepSDKCall_SetFromConf(gamedata, SDKConf_Virtual, "CServerGameDLL::GetTickInterval");
+	PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_ByValue);
+	Handle call = EndPrepSDKCall();
+	if (!call)
+		SetFailState("Failed to create SDKCall 'CServerGameDLL::GetTickInterval'");
+	
+	float defInterval = SDKCall(call, g_ServerGameDLL);
+	delete call;
+	
+	char defIntervalStr[32];
+	FloatToString(defInterval, defIntervalStr, sizeof(defIntervalStr));
 	
 	DynamicDetour detour = CreateDynamicDetour(gamedata, "CGameServer::SpawnServer");
 	detour.Enable(Hook_Pre, CGameServer_SpawnServer);
+	delete detour;
 	
 	DynamicHook hook = CreateDynamicHook(gamedata, "CServerGameDLL::GetTickInterval");
 	hook.HookRaw(Hook_Pre, g_ServerGameDLL, CServerGameDLL_GetTickInterval);
-	
-	delete detour;
 	delete hook;
+	
 	delete gamedata;
 	
-	sm_interval_per_tick = CreateConVar("sm_interval_per_tick", defInterval, "Time between server ticks (applied on level change).", FCVAR_NOTIFY, true, MINIMUM_TICK_INTERVAL, true, MAXIMUM_TICK_INTERVAL);
+	sm_interval_per_tick = CreateConVar("sm_interval_per_tick", defIntervalStr, "Time between server ticks (applied on level change).", FCVAR_NOTIFY, true, MINIMUM_TICK_INTERVAL, true, MAXIMUM_TICK_INTERVAL);
 	RegServerCmd("sm_tickrate", OnTickRateChanged, "Sets the tickrate of the server (applied on level change).");
 }
 
@@ -63,7 +73,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 float GetCustomTickInterval()
 {
-	int tickrate = GetCommandLineParamInt("-tickrate", 0);
+	int tickrate = GetCommandLineParamInt("-tickrate");
 	if (tickrate)
 		sm_interval_per_tick.FloatValue = (1.0 / tickrate);
 	
@@ -104,20 +114,6 @@ int GetOffset(GameData gamedata, const char[] name)
 		SetFailState("Failed to find '%s' offset", name);
 	
 	return offset;
-}
-
-float GetDefaultTickInterval(GameData gamedata)
-{
-	StartPrepSDKCall(SDKCall_Raw);
-	PrepSDKCall_SetFromConf(gamedata, SDKConf_Virtual, "CServerGameDLL::GetTickInterval");
-	PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_ByValue);
-	Handle call = EndPrepSDKCall();
-	if (!call)
-		SetFailState("Failed to create SDKCall 'CServerGameDLL::GetTickInterval'");
-	
-	float interval = SDKCall(call, g_ServerGameDLL);
-	delete call;
-	return interval;
 }
 
 static MRESReturn CServerGameDLL_GetTickInterval(DHookReturn ret)
